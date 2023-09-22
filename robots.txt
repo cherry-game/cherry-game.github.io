@@ -1,0 +1,5 @@
+
+User-agent:*
+Disallow:
+
+Sitemap: https://theme-hope-docs-demo.vuejs.press/sitemap.xml
