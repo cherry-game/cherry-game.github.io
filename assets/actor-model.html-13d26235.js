@@ -1,1 +1,0 @@
-import{_ as e}from"./plugin-vue_export-helper-c27b6911.js";import{o,c as t}from"./app-0495b8e2.js";const c={};function r(_,a){return o(),t("div")}const m=e(c,[["render",r],["__file","actor-model.html.vue"]]);export{m as default};

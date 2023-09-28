@@ -1,1 +1,0 @@
-const e=JSON.parse('{"key":"v-ded6d5d0","path":"/zh/core/profile.html","title":"Profile配置","lang":"zh-CN","frontmatter":{"title":"Profile配置"},"headers":[],"git":{"createdTime":null,"updatedTime":null,"contributors":[]},"readingTime":{"minutes":0.01,"words":4},"filePathRelative":"zh/core/profile.md"}');export{e as data};

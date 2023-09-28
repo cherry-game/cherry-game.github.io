@@ -1,1 +1,0 @@
-const e=JSON.parse('{"key":"v-b88f8218","path":"/zh/core/connector.html","title":"连接器","lang":"zh-CN","frontmatter":{"title":"连接器"},"headers":[],"git":{"createdTime":null,"updatedTime":null,"contributors":[]},"readingTime":{"minutes":0.01,"words":4},"filePathRelative":"zh/core/connector.md"}');export{e as data};

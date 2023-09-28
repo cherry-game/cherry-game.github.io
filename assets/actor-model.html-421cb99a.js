@@ -1,1 +1,0 @@
-const t=JSON.parse('{"key":"v-525fd320","path":"/zh/core/actor-model.html","title":"Actor模型","lang":"zh-CN","frontmatter":{"title":"Actor模型"},"headers":[],"git":{"createdTime":null,"updatedTime":null,"contributors":[]},"readingTime":{"minutes":0.01,"words":4},"filePathRelative":"zh/core/actor-model.md"}');export{t as data};

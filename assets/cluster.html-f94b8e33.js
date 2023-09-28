@@ -1,1 +1,0 @@
-const e=JSON.parse('{"key":"v-0af59767","path":"/zh/core/cluster.html","title":"通信&集群","lang":"zh-CN","frontmatter":{"title":"通信&集群"},"headers":[],"git":{"createdTime":null,"updatedTime":null,"contributors":[]},"readingTime":{"minutes":0.02,"words":5},"filePathRelative":"zh/core/cluster.md"}');export{e as data};

@@ -1,1 +1,0 @@
-const e=JSON.parse('{"key":"v-49c6bfd9","path":"/zh/core/net-packet.html","title":"网络数据包","lang":"zh-CN","frontmatter":{"title":"网络数据包"},"headers":[],"git":{"createdTime":null,"updatedTime":null,"contributors":[]},"readingTime":{"minutes":0.02,"words":6},"filePathRelative":"zh/core/net-packet.md"}');export{e as data};
