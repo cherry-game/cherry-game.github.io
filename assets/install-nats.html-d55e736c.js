@@ -1,1 +1,0 @@
-import{_ as t}from"./plugin-vue_export-helper-c27b6911.js";import{o as e,c}from"./app-833b2826.js";const n={};function o(r,s){return e(),c("div")}const l=t(n,[["render",o],["__file","install-nats.html.vue"]]);export{l as default};
