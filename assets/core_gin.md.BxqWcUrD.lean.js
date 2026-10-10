@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as t,a0 as n}from"./chunks/framework.DqMqoJl9.js";const o=JSON.parse('{"title":"gin 组件","description":"","frontmatter":{},"headers":[],"relativePath":"core/gin.md","filePath":"core/gin.md"}'),h={name:"core/gin.md"};function e(k,s,l,p,d,r){return a(),t("div",null,[...s[0]||(s[0]=[n("",33)])])}const g=i(h,[["render",e]]);export{o as __pageData,g as default};

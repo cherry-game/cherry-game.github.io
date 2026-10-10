@@ -1,0 +1,87 @@
+import{_ as s,o as a,c as t,a0 as e}from"./chunks/framework.DqMqoJl9.js";const g=JSON.parse('{"title":"架构总览","description":"","frontmatter":{},"headers":[],"relativePath":"guides/architecture.md","filePath":"guides/architecture.md"}'),p={name:"guides/architecture.md"};function o(c,n,l,d,r,i){return a(),t("div",null,[...n[0]||(n[0]=[e(`<h1 id="架构总览" tabindex="-1">架构总览 <a class="header-anchor" href="#架构总览" aria-label="Permalink to &quot;架构总览&quot;">​</a></h1><p>这页用一张图把 Cherry 的整体结构讲清楚。建议在读完<a href="/guides/cherry.html">关于 Cherry</a>之后先看这页，后面的具体页面都是在展开这里的某一块。</p><h2 id="四条执行链" tabindex="-1">四条执行链 <a class="header-anchor" href="#四条执行链" aria-label="Permalink to &quot;四条执行链&quot;">​</a></h2><p>框架的代码可以按四条链路来理解，每条链路职责独立：</p><table tabindex="0"><thead><tr><th>链路</th><th>关键路径</th><th>职责</th></tr></thead><tbody><tr><td><strong>应用装配</strong></td><td><code>cherry.go</code> → <code>application.go</code></td><td>组件注册、生命周期、启动</td></tr><tr><td><strong>Actor 执行</strong></td><td><code>net/actor/</code></td><td>每个 Actor 一个 goroutine、串行邮箱、本地/远程/事件分发</td></tr><tr><td><strong>集群通信</strong></td><td><code>net/cluster/</code> + <code>net/nats/</code> + <code>net/discovery/</code></td><td>跨节点 RPC、NATS 传输、成员发现</td></tr><tr><td><strong>前端接入</strong></td><td><code>net/parser/</code> + <code>net/connector/</code></td><td>协议编解码、session、Agent Actor、WebSocket/TCP</td></tr></tbody></table><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>                         ┌──────────────────────────────┐</span></span>
+<span class="line"><span>                         │         你的业务代码          │</span></span>
+<span class="line"><span>                         │   Actor / Component / 配表    │</span></span>
+<span class="line"><span>                         └──────────────┬───────────────┘</span></span>
+<span class="line"><span>                                        │</span></span>
+<span class="line"><span>        ┌───────────────────────────────┼───────────────────────────────┐</span></span>
+<span class="line"><span>        │                               │                               │</span></span>
+<span class="line"><span>┌───────▼────────┐            ┌─────────▼─────────┐           ┌─────────▼────────┐</span></span>
+<span class="line"><span>│   应用装配      │            │    Actor 执行      │           │    集群通信       │</span></span>
+<span class="line"><span>│ cherry.go      │            │   net/actor/      │           │  net/cluster/    │</span></span>
+<span class="line"><span>│ application.go │◀──────────▶│  每个 Actor 一个    │◀─────────▶│  net/nats/       │</span></span>
+<span class="line"><span>│                │            │  goroutine + 串行   │           │  net/discovery/  │</span></span>
+<span class="line"><span>│ 组件注册/生命周期 │            │  邮箱（4 条通路）    │           │  跨节点 RPC/发现   │</span></span>
+<span class="line"><span>└───────┬────────┘            └─────────▲─────────┘           └──────────────────┘</span></span>
+<span class="line"><span>        │                               │</span></span>
+<span class="line"><span>        │                     ┌─────────┴─────────┐</span></span>
+<span class="line"><span>        └────────────────────▶│    前端接入        │</span></span>
+<span class="line"><span>                              │  net/parser/      │</span></span>
+<span class="line"><span>                              │  net/connector/   │</span></span>
+<span class="line"><span>                              │  编解码/Agent 连接 │</span></span>
+<span class="line"><span>                              └─────────▲─────────┘</span></span>
+<span class="line"><span>                                        │</span></span>
+<span class="line"><span>                                   tcp / websocket</span></span>
+<span class="line"><span>                                        │</span></span>
+<span class="line"><span>                                    客户端</span></span></code></pre></div><h2 id="启动顺序" tabindex="-1">启动顺序 <a class="header-anchor" href="#启动顺序" aria-label="Permalink to &quot;启动顺序&quot;">​</a></h2><p>理解启动顺序能解释很多「为什么这里拿不到那个组件」的问题。</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>1. cherry.Configure(...)                    创建 Application，读 profile</span></span>
+<span class="line"><span>2. AppBuilder.Startup()</span></span>
+<span class="line"><span>   ├─ 集群模式：自动注册 cluster_component</span></span>
+<span class="line"><span>   ├─ 集群模式：自动注册 discovery_component</span></span>
+<span class="line"><span>   ├─ 自动注册 actor_component</span></span>
+<span class="line"><span>   ├─ 注册你通过 app.Register() 添加的组件</span></span>
+<span class="line"><span>   └─ Application.Startup()</span></span>
+<span class="line"><span>      ├─ 若设置了 netParser，把它的 connector 注册为组件</span></span>
+<span class="line"><span>      ├─ 所有组件按注册顺序执行 Set → Init → OnAfterInit</span></span>
+<span class="line"><span>      └─ 阻塞等待退出信号</span></span>
+<span class="line"><span>3. 收到 SIGINT/SIGTERM 或调用 Shutdown()</span></span>
+<span class="line"><span>   └─ 组件逆序执行 OnBeforeStop → OnStop</span></span></code></pre></div><div class="tip custom-block"><p class="custom-block-title">三个关键推论</p><ol><li><strong>自定义组件总能拿到 <code>Cluster()</code> / <code>Discovery()</code> / <code>ActorSystem()</code></strong> —— 它们在自定义组件之前注册</li><li><strong><code>OnAfterInit()</code> 里才能安全访问其它组件</strong> —— <code>Init()</code> 阶段其它组件可能还没初始化</li><li><strong><code>Registration</code> 只在启动前有效</strong> —— <code>Startup()</code> 之后调用 <code>Register()</code> 不会生效</li></ol></div><div class="warning custom-block"><p class="custom-block-title">前端节点必须设置解析器</p><p><code>isFrontend = true</code> 但没有调用 <code>SetNetParser(...)</code> 会导致<strong>启动时 panic</strong>。这是框架刻意的检查——前端节点不接收客户端连接是没有意义的。</p></div><h2 id="一条消息的完整路径" tabindex="-1">一条消息的完整路径 <a class="header-anchor" href="#一条消息的完整路径" aria-label="Permalink to &quot;一条消息的完整路径&quot;">​</a></h2><p>以客户端发一条业务消息为例：</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>① 客户端</span></span>
+<span class="line"><span>   │  ws/tcp 字节流</span></span>
+<span class="line"><span>   ▼</span></span>
+<span class="line"><span>② connector（net/connector/）</span></span>
+<span class="line"><span>   │  接受连接，交给 parser</span></span>
+<span class="line"><span>   ▼</span></span>
+<span class="line"><span>③ parser（net/parser/pomelo/）</span></span>
+<span class="line"><span>   │  ① 解 package 头（type + length）</span></span>
+<span class="line"><span>   │  ② 解 message 头（flag + mid + route）</span></span>
+<span class="line"><span>   │  ③ 交给 onDataRoute</span></span>
+<span class="line"><span>   ▼</span></span>
+<span class="line"><span>④ 路由决策</span></span>
+<span class="line"><span>   ├─ 目标 nodeType == 本节点  → PublishLocal（进程内，不序列化）</span></span>
+<span class="line"><span>   └─ 否则                    → 经 NATS 发到目标节点</span></span>
+<span class="line"><span>   ▼</span></span>
+<span class="line"><span>⑤ Actor 邮箱</span></span>
+<span class="line"><span>   │  投递到 Local 队列</span></span>
+<span class="line"><span>   ▼</span></span>
+<span class="line"><span>⑥ Actor goroutine</span></span>
+<span class="line"><span>   │  ① 反序列化参数（此时才 Unmarshal）</span></span>
+<span class="line"><span>   │  ② 按 funcName 找到注册的处理函数</span></span>
+<span class="line"><span>   │  ③ 调用</span></span>
+<span class="line"><span>   ▼</span></span>
+<span class="line"><span>⑦ 处理函数</span></span>
+<span class="line"><span>   │  Response / Push / Call 其它 Actor</span></span>
+<span class="line"><span>   ▼</span></span>
+<span class="line"><span>⑧ 回程：序列化 → parser 编码 → 客户端</span></span></code></pre></div><p>几个容易误解的点：</p><ul><li><strong>第 ③ 步不做反序列化</strong>。body 一路以原始 <code>[]byte</code> 传到第 ⑥ 步的调用处才 <code>Unmarshal</code>。所以「反序列化失败」的报错出现在 Actor 调用处，不是网络层。</li><li><strong>第 ④ 步的「本地」指进程内</strong>。同一节点内 Actor 之间的 <code>Call</code> 走的是 remote 队列，不是 local。</li><li><strong>第 ⑥ 步是串行的</strong>。同一个 Actor 的所有处理函数依次执行，不会并发——这就是 Actor 内部字段不用加锁的原因。</li></ul><p>协议字节格式详见 <a href="/advanced/pomelo-protocol.html">Pomelo 协议规范</a>。</p><h2 id="actor-执行模型" tabindex="-1">Actor 执行模型 <a class="header-anchor" href="#actor-执行模型" aria-label="Permalink to &quot;Actor 执行模型&quot;">​</a></h2><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>        ┌──────────────── 一个 Actor ────────────────┐</span></span>
+<span class="line"><span>        │                                            │</span></span>
+<span class="line"><span>  ┌─────▼─────┐  ┌──────────┐  ┌─────────┐  ┌────────┐</span></span>
+<span class="line"><span>  │   local   │  │  remote  │  │  event  │  │ timer  │   四条通路</span></span>
+<span class="line"><span>  │  queue    │  │  queue   │  │  queue  │  │  ch    │   各自 FIFO</span></span>
+<span class="line"><span>  └─────┬─────┘  └────┬─────┘  └────┬────┘  └───┬────┘</span></span>
+<span class="line"><span>        │             │             │           │</span></span>
+<span class="line"><span>        └─────────────┴──────┬──────┴───────────┘</span></span>
+<span class="line"><span>                             │</span></span>
+<span class="line"><span>                    ┌────────▼────────┐</span></span>
+<span class="line"><span>                    │  单个 goroutine  │  ← 串行处理，无需加锁</span></span>
+<span class="line"><span>                    │  select 循环     │</span></span>
+<span class="line"><span>                    └────────┬────────┘</span></span>
+<span class="line"><span>                             │</span></span>
+<span class="line"><span>                    ┌────────▼────────┐</span></span>
+<span class="line"><span>                    │  Actor 内部状态  │  userMap / 计数器 / 缓存…</span></span>
+<span class="line"><span>                    └─────────────────┘</span></span></code></pre></div><table tabindex="0"><thead><tr><th>通路</th><th>触发方式</th></tr></thead><tbody><tr><td>Local</td><td>客户端消息经路由投递，<code>PostLocal</code></td></tr><tr><td>Remote</td><td>其它 Actor 的 <code>Call</code> / <code>CallWait</code>（<strong>同节点也是这条</strong>）</td></tr><tr><td>Event</td><td><code>PostEvent</code> 订阅/发布</td></tr><tr><td>Timer</td><td>Actor 的 <code>p.Timer().Add(...)</code></td></tr></tbody></table><div class="warning custom-block"><p class="custom-block-title">不要在 Actor 里做阻塞操作</p><p>一个 Actor 只有一个 goroutine。在回调里做同步 HTTP、等锁、长时间计算，会<strong>卡住整个 Actor 的后续消息</strong>。需要阻塞操作时用 <code>Call</code> 交给别的 Actor，或用 <code>cutils.Try</code> 包一层。</p><p>Child Actor 与父 Actor <strong>共享同一个 goroutine</strong>，所以一个卡住的子 Actor 会阻塞父 Actor。</p></div><p>Actor 的详细 API 见 <a href="/core/actor-model.html">Actor 模型</a>。</p><h2 id="节点与集群" tabindex="-1">节点与集群 <a class="header-anchor" href="#节点与集群" aria-label="Permalink to &quot;节点与集群&quot;">​</a></h2><p>一个 Cherry 进程 = 一个<strong>节点</strong>，节点有类型（nodeType）和 id（nodeID）。</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>                     ┌─────────────────┐</span></span>
+<span class="line"><span>                     │   NATS 服务器    │  ← 所有节点间的通信总线</span></span>
+<span class="line"><span>                     └────────┬────────┘</span></span>
+<span class="line"><span>          ┌──────────────┬────┴────┬──────────────┐</span></span>
+<span class="line"><span>          │              │         │              │</span></span>
+<span class="line"><span>    ┌─────▼─────┐  ┌─────▼────┐  ┌─▼──────┐  ┌────▼─────┐</span></span>
+<span class="line"><span>    │  master   │  │   gate   │  │  game  │  │   web    │</span></span>
+<span class="line"><span>    │ 发现服务   │  │  网关     │  │ 逻辑服  │  │  HTTP    │</span></span>
+<span class="line"><span>    └───────────┘  └──────────┘  └────────┘  └──────────┘</span></span>
+<span class="line"><span>        ↑ 注册/心跳      ↑ 客户端连接    ↑ 玩家 Actor    ↑ 浏览器</span></span></code></pre></div><table tabindex="0"><thead><tr><th>概念</th><th>说明</th></tr></thead><tbody><tr><td><strong>节点类型</strong></td><td>由 profile 中 <code>node</code> 段的键决定，如 <code>gate</code> / <code>game</code> / <code>web</code></td></tr><tr><td><strong>节点 id</strong></td><td>每个节点的唯一标识，节点靠它在 profile 里查出自己的配置</td></tr><tr><td><strong>发现服务</strong></td><td>维护「集群里有哪些节点」，支持 <code>default</code> / <code>nats</code> / <code>etcd</code> 三种后端</td></tr><tr><td><strong>集群通信</strong></td><td>固定走 NATS，框架封装好 subject 与请求应答</td></tr><tr><td><strong>Actor 路径</strong></td><td><code>节点id.ActorID</code> 或 <code>节点id.ActorID.子id</code>，跨节点寻址靠它</td></tr></tbody></table><p>节点间通信与发现服务的细节见 <a href="/core/cluster.html">通信 &amp; 集群</a>。</p><h2 id="全局状态与限制" tabindex="-1">全局状态与限制 <a class="header-anchor" href="#全局状态与限制" aria-label="Permalink to &quot;全局状态与限制&quot;">​</a></h2><p>框架有若干<strong>包级全局变量</strong>，因此：</p><div class="warning custom-block"><p class="custom-block-title">一个进程只能有一个 Application</p><p>这些是包级单例，多个 Application 会互相冲突：</p><table tabindex="0"><thead><tr><th>包</th><th>全局状态</th></tr></thead><tbody><tr><td><code>profile/</code></td><td><code>profilePath</code>、<code>jsonConfig</code>、<code>env</code>、<code>debug</code>、<code>printLevel</code></td></tr><tr><td><code>logger/</code></td><td><code>DefaultLogger</code></td></tr><tr><td><code>net/nats/</code></td><td><code>connectPool</code>、<code>roundIndex</code></td></tr><tr><td><code>net/discovery/</code></td><td><code>discoveryMap</code>（组件注册表）</td></tr></tbody></table><p>需要多个实例请拆成多个进程。</p></div><h2 id="关键约定" tabindex="-1">关键约定 <a class="header-anchor" href="#关键约定" aria-label="Permalink to &quot;关键约定&quot;">​</a></h2><table tabindex="0"><thead><tr><th>约定</th><th>说明</th></tr></thead><tbody><tr><td>Actor 路径</td><td><code>{nodeID}.{actorID}</code> 或 <code>{nodeID}.{actorID}.{childID}</code>，<code>.</code> 开头表示本节点</td></tr><tr><td>组件名唯一</td><td><code>Name()</code> 在一个 Application 内必须唯一</td></tr><tr><td>注册时机</td><td><code>Register()</code> 只在 <code>Startup()</code> 之前有效</td></tr><tr><td>Actor 系统组件</td><td>框架自动注册，<strong>不要手动注册</strong> <code>actor_component</code></td></tr><tr><td>集群组件</td><td>集群模式下框架自动注册 <code>cluster_component</code> + <code>discovery_component</code></td></tr><tr><td><code>Startup()</code> 会阻塞</td><td>它不是「初始化后返回」，而是阻塞到进程退出</td></tr><tr><td>子 Actor 限制</td><td>只能由父 Actor 创建，<strong>子 Actor 不能再创建孙 Actor</strong></td></tr><tr><td>消息对象池</td><td><code>Message</code> 来自对象池，投递失败时调用方负责 <code>Recycle()</code></td></tr></tbody></table><h2 id="下一步" tabindex="-1">下一步 <a class="header-anchor" href="#下一步" aria-label="Permalink to &quot;下一步&quot;">​</a></h2><ul><li><a href="/core/component.html">组件管理</a> —— 应用装配链路的展开</li><li><a href="/core/actor-model.html">Actor 模型</a> —— Actor 执行链路的展开</li><li><a href="/core/cluster.html">通信 &amp; 集群</a> —— 集群通信链路的展开</li><li><a href="/core/net-packet.html">网络数据包</a> —— 前端接入链路的展开</li><li><a href="/guides/code-cherry.html">编写一个 Cherry 服务器</a> —— 动手跑起来</li></ul>`,34)])])}const u=s(p,[["render",o]]);export{g as __pageData,u as default};
